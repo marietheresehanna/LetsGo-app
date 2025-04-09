@@ -1,74 +1,150 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+// app/(tabs)/index.tsx
+import { API_BASE_URL } from '@/constants/env';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+
+type PlaceType = {
+  name: string;
+  image: string;
+  location: string;
+  rating: number;
+};
 
 export default function HomeScreen() {
+  const [places, setPlaces] = useState<PlaceType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [userName, setUserName] = useState('');
+
+  const fetchPlaces = async () => {
+    try {
+      const res = await axios.get<PlaceType[]>(`${API_BASE_URL}/api/places`);
+      setPlaces(res.data);
+    } catch (err) {
+      console.error('Error fetching places:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const fetchUserName = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        const res = await axios.get<{ name: string }>(
+          'http://192.168.0.102:5000/api/auth/profile',
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setUserName(res.data.name);
+      }
+    } catch (err) {
+      console.error('Error fetching user name:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPlaces();
+    fetchUserName();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchPlaces();
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#e23744" />
+      </View>
+    );
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
+      <View style={styles.header}>
+        <Text style={styles.greeting}>Hello, {userName || 'Guest'}</Text>
+        <Text style={styles.subheading}>Where do you wanna go today?</Text>
+      </View>
+
+      {places.map((place, index) => (
+        <View key={index} style={styles.card}>
+          <Image source={{ uri: place.image }} style={styles.image} />
+          <View style={styles.details}>
+            <Text style={styles.name}>{place.name}</Text>
+            <Text style={styles.meta}>⭐ {place.rating} ‧ {place.location}</Text>
+          </View>
+        </View>
+      ))}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    padding: 16,
+    backgroundColor: '#fff',
+  },
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  header: {
+    marginBottom: 24,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  greeting: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#e23744',
+  },
+  subheading: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#333',
+    marginTop: 4,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  image: {
+    width: '100%',
+    height: 180,
+  },
+  details: {
+    padding: 12,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111',
+  },
+  meta: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
   },
 });
