@@ -44,7 +44,7 @@ export default function HomeScreen() {
       const token = await AsyncStorage.getItem('token');
       if (token) {
         const res = await axios.get<{ name: string }>(
-          'http://192.168.0.102:5000/api/auth/profile',
+          'http://192.168.1.106:5000/api/auth/profile',
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setUserName(res.data.name);
