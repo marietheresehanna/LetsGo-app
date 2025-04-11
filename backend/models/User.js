@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema(
     phone:     { type: String },
     gender:    { type: String, enum: ['male', 'female', 'other'] },
     birthdate: { type: Date },
+    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Place' }]
   },
   { timestamps: true }
 );

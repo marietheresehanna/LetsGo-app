@@ -18,6 +18,7 @@ const placeRoutes = require('./routes/place.routes');
 app.use('/api/places', placeRoutes);
 
 
+
 // MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI, {

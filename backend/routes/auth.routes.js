@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Place = require('../models/Place');
 const authMiddleware = require('../middleware/auth'); // For profile route
 
 // SIGN UP
@@ -126,6 +127,42 @@ router.delete('/delete-account', authMiddleware, async (req, res) => {
     res.json({ message: 'Account deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
+  }
+});
+router.post('/favorites/:placeId', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const placeId = req.params.placeId;
+
+    if (!user.favorites.includes(placeId)) {
+      user.favorites.push(placeId);
+      await user.save();
+    }
+
+    res.json({ message: 'Added to favorites' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to add favorite' });
+  }
+});
+router.delete('/favorites/:placeId', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    user.favorites = user.favorites.filter(
+      (id) => id.toString() !== req.params.placeId
+    );
+    await user.save();
+
+    res.json({ message: 'Removed from favorites' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to remove favorite' });
+  }
+});
+router.get('/favorites', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate('favorites');
+    res.json(user.favorites);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch favorites' });
   }
 });
 

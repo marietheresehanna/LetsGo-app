@@ -6,21 +6,54 @@ import {
   StyleSheet,
   ScrollView,
   Image,
+  TouchableOpacity,
 } from 'react-native';
 import axios from 'axios';
 import { API_BASE_URL } from '@/constants/env';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+
+
 
 type Place = {
+  _id: string;
   name: string;
   image: string;
   location: string;
   rating: number;
+  type?: string[];
+  tags?: string[];
 };
+
 
 export default function ExploreScreen() {
   const [query, setQuery] = useState('');
+  const router = useRouter();
   const [allPlaces, setAllPlaces] = useState<Place[]>([]);
   const [filtered, setFiltered] = useState<Place[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const toggleFavorite = async (placeId: string) => {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) return;
+  
+    const isFav = favoriteIds.includes(placeId);
+  
+    if (isFav) {
+      await axios.delete(`${API_BASE_URL}/api/auth/favorites/${placeId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setFavoriteIds((prev) => prev.filter((id) => id !== placeId));
+    } else {
+      await axios.post(`${API_BASE_URL}/api/auth/favorites/${placeId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setFavoriteIds((prev) => [...prev, placeId]);
+    }
+  };
+  
+
 
   const normalize = (str: string) =>
     str
@@ -33,18 +66,42 @@ export default function ExploreScreen() {
   const handleSearch = (text: string) => {
     setQuery(text);
     const normalizedQuery = normalize(text);
-    const filteredResults = allPlaces.filter((place) =>
-      normalize(place.name).includes(normalizedQuery)
-    );
+    const filteredResults = allPlaces.filter((place) => {
+      const nameMatch = normalize(place.name).includes(normalizedQuery);
+      const typeMatch = place.type?.some((t) =>
+        normalize(t).includes(normalizedQuery)
+      );
+      const tagMatch = place.tags?.some((t) =>
+        normalize(t).includes(normalizedQuery)
+      );
+    
+      return nameMatch || typeMatch || tagMatch;
+    });
+    
     setFiltered(filteredResults);
   };
 
   useEffect(() => {
+    const fetchFavorites = async () => {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+    
+      const res = await axios.get<Place[]>(`${API_BASE_URL}/api/auth/favorites`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    
+      const ids = res.data.map((place) => place._id);
+      setFavoriteIds(ids);
+    };
+    
+  
     axios.get<Place[]>(`${API_BASE_URL}/api/places`).then((res) => {
       setAllPlaces(res.data);
       setFiltered(res.data);
+      fetchFavorites();
     });
   }, []);
+  
 
   return (
     <View style={styles.container}>
@@ -57,19 +114,42 @@ export default function ExploreScreen() {
         onChangeText={handleSearch}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {filtered.map((place, index) => (
-          <View key={index} style={styles.card}>
-            <Image source={{ uri: place.image }} style={styles.image} />
-            <View style={styles.content}>
-              <Text style={styles.name}>{place.name}</Text>
-              <Text style={styles.info}>
-                ⭐ {place.rating.toFixed(1)} ‧ 📍 {place.location}
-              </Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+<ScrollView showsVerticalScrollIndicator={false}>
+  {filtered.map((place, index) => (
+    <TouchableOpacity
+      key={index}
+      style={styles.card}
+      onPress={() =>
+        router.push({ pathname: '/place/[id]', params: { id: place._id } })
+      }
+    >
+      <Image source={{ uri: place.image }} style={styles.image} />
+
+      <View style={styles.content}>
+        <Text style={styles.name}>{place.name}</Text>
+        <Text style={styles.info}>
+          ⭐ {place.rating.toFixed(1)} ‧ 📍 {place.location}
+        </Text>
+
+        <TouchableOpacity
+          onPress={(e) => {
+            e.stopPropagation(); // ✅ prevent navigation when tapping heart
+            toggleFavorite(place._id);
+          }}
+          style={{ position: 'absolute', top: 10, right: 10 }}
+        >
+          <Ionicons
+            name={
+              favoriteIds.includes(place._id) ? 'heart' : 'heart-outline'
+            }
+            size={24}
+            color="#e23744"
+          />
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  ))}
+</ScrollView>
     </View>
   );
 }

@@ -1,6 +1,4 @@
-// app/(tabs)/index.tsx
 import { API_BASE_URL } from '@/constants/env';
-
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -44,7 +42,7 @@ export default function HomeScreen() {
       const token = await AsyncStorage.getItem('token');
       if (token) {
         const res = await axios.get<{ name: string }>(
-          'http://192.168.1.106:5000/api/auth/profile',
+          `${API_BASE_URL}/api/auth/profile`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setUserName(res.data.name);
@@ -77,9 +75,13 @@ export default function HomeScreen() {
       style={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
+      <View style={styles.logoBox}>
+        <Text style={styles.logoText}>LetsGo</Text>
+      </View>
+
       <View style={styles.header}>
-        <Text style={styles.greeting}>Hello, {userName || 'Guest'}</Text>
-        <Text style={styles.subheading}>Where do you wanna go today?</Text>
+        <Text style={styles.greeting}>Welcome {userName || 'Guest'} 👋</Text>
+        <Text style={styles.subheading}>Let’s find your next favorite spot!</Text>
       </View>
 
       {places.map((place, index) => (
@@ -105,19 +107,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  logoBox: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logoText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#e23744',
+    letterSpacing: 1,
+  },
   header: {
+    backgroundColor: '#ffecef',
+    padding: 16,
+    borderRadius: 12,
     marginBottom: 24,
   },
   greeting: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: '#e23744',
   },
   subheading: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '400',
     color: '#333',
-    marginTop: 4,
+    marginTop: 6,
   },
   card: {
     backgroundColor: '#fff',

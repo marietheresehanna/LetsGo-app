@@ -20,15 +20,17 @@ export default function AccountScreen() {
   const fetchUser = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
+  
       if (!token) {
-        router.replace('/login');
+        setUser(null);
+        setLoading(false);
         return;
       }
-
+  
       const res = await axios.get(`${API_BASE_URL}/api/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
+  
       setUser(res.data);
     } catch (err) {
       Alert.alert('Error', 'Failed to load profile');
@@ -36,6 +38,7 @@ export default function AccountScreen() {
       setLoading(false);
     }
   };
+  
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem('token');
@@ -57,10 +60,17 @@ export default function AccountScreen() {
   if (!user) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>User not found</Text>
+        <Text style={styles.title}>You're not logged in</Text>
+        <Text style={{ textAlign: 'center', color: '#555', marginBottom: 20 }}>
+          Please log in to access your account.
+        </Text>
+        <TouchableOpacity style={styles.button} onPress={() => router.push('/login')}>
+          <Text style={styles.buttonText}>Start Now</Text>
+        </TouchableOpacity>
       </View>
     );
   }
+  
 
   return (
     <View style={styles.container}>
