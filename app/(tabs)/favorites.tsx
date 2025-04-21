@@ -6,129 +6,194 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '@/constants/env';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-type Place = {
+interface Place {
   _id: string;
   name: string;
   image: string;
   location: string;
   rating: number;
-};
+}
 
 export default function FavoritesScreen() {
   const [favorites, setFavorites] = useState<Place[]>([]);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
 
+  const fetchFavorites = async () => {
+    const storedToken = await AsyncStorage.getItem('token');
+    setToken(storedToken);
+
+    if (!storedToken) {
+      setFavorites([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await axios.get<Place[]>(`${API_BASE_URL}/api/auth/favorites`, {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      });
+      setFavorites(res.data);
+    } catch (err) {
+      console.error('❌ Error fetching favorites:', err);
+      setFavorites([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchFavorites = async () => {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) return;
-
-      try {
-        const res = await axios.get<Place[]>(`${API_BASE_URL}/api/auth/favorites`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setFavorites(res.data);
-        setIsLoggedIn(true);
-      } catch (err) {
-        console.error('Failed to load favorites', err);
-      }
-    };
-
     fetchFavorites();
   }, []);
 
-  if (!isLoggedIn) {
+  const toggleFavorite = async (placeId: string) => {
+    if (!token) {
+      alert('You must be logged in to favorite places.');
+      return;
+    }
+
+    const isFav = favorites.some(p => p._id === placeId);
+
+    try {
+      if (isFav) {
+        await axios.delete(`${API_BASE_URL}/api/auth/favorites/${placeId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setFavorites(prev => prev.filter(p => p._id !== placeId));
+      } else {
+        await axios.post(`${API_BASE_URL}/api/auth/favorites/${placeId}`, {}, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        fetchFavorites();
+      }
+    } catch (err) {
+      console.error('❌ Error toggling favorite:', err);
+    }
+  };
+
+  if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.text}>⭐ Your Favorites</Text>
-        <Text style={styles.sub}>Log in to view your favorite places.</Text>
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#e23744" />
+      </View>
+    );
+  }
+
+  if (!token) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.message}>You must be logged in to view your favorites.</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.listContainer}>
+    <ScrollView style={styles.container}>
       <Text style={styles.title}>⭐ Your Favorites</Text>
 
-      {favorites.map((place) => (
-        <TouchableOpacity
-          key={place._id}
-          style={styles.card}
-          onPress={() => router.push({ pathname: '/place/[id]', params: { id: place._id } })}
-        >
-          <Image source={{ uri: place.image }} style={styles.image} />
-          <View style={styles.content}>
-            <Text style={styles.name}>{place.name}</Text>
-            <Text style={styles.info}>
-              ⭐ {place.rating.toFixed(1)} ‧ 📍 {place.location}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      ))}
+      {favorites.length === 0 ? (
+        <Text style={styles.message}>You haven't added any favorites yet.</Text>
+      ) : (
+        favorites.map((place) => (
+          <TouchableOpacity
+            key={place._id}
+            style={styles.card}
+            onPress={() => router.push({ pathname: '/place/[id]', params: { id: place._id } })}
+          >
+            <Image source={{ uri: place.image }} style={styles.image} />
+            <View style={styles.cardContent}>
+              <Text style={styles.name}>{place.name}</Text>
+              <Text style={styles.location}>📍 {place.location}</Text>
+              <Text style={styles.rating}>⭐ {place.rating.toFixed(1)}</Text>
+              <TouchableOpacity onPress={() => toggleFavorite(place._id)} style={styles.favoriteIcon}>
+                <Ionicons
+                  name={favorites.some(p => p._id === place._id) ? 'heart' : 'heart-outline'}
+                  size={24}
+                  color="#e23744"
+                />
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        ))
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    backgroundColor: '#fff',
+    padding: 16,
+  },
+  centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  listContainer: {
-    flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#e23744',
-    marginBottom: 20,
-  },
-  text: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
+    color: '#e23744',
+    marginBottom: 16,
   },
-  sub: {
-    marginTop: 10,
-    fontSize: 14,
-    color: '#555',
+  message: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 40,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f9f9f9',
     borderRadius: 12,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 5,
-    elevation: 3,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 2,
   },
   image: {
     height: 180,
     width: '100%',
   },
-  content: {
+  cardContent: {
     padding: 12,
+    position: 'relative',
   },
   name: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '600',
     color: '#222',
   },
-  info: {
+  location: {
     fontSize: 14,
-    color: '#555',
+    color: '#666',
     marginTop: 4,
+  },
+  rating: {
+    fontSize: 14,
+    color: '#000',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  favoriteIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#fff',
+    padding: 6,
+    borderRadius: 20,
+    elevation: 2,
   },
 });

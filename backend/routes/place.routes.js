@@ -2,10 +2,21 @@ const express = require('express');
 const router = express.Router();
 const Place = require('../models/Place');
 
-// GET all places
+// GET all places (optionally filter by category/type)
 router.get('/', async (req, res) => {
   try {
-    const places = await Place.find();
+    const filter = {};
+
+    if (req.query.type) {
+      // Case-insensitive exact match on array field
+      filter.type = {
+        $elemMatch: {
+          $regex: new RegExp(`^${req.query.type}$`, 'i'),
+        },
+      };
+    }
+
+    const places = await Place.find(filter);
     res.json(places);
   } catch (err) {
     res.status(500).json({ message: 'Error fetching places' });
@@ -57,9 +68,8 @@ router.post('/:id/reviews', async (req, res) => {
 
     await place.save();
 
-    // ✅ Send the updated place with full reviews list
     const updatedPlace = await Place.findById(req.params.id);
-    res.json(updatedPlace);
+    res.json({ place: updatedPlace }); // ✅ frontend expects { place: ... }
 
   } catch (err) {
     res.status(400).json({ message: 'Failed to add review', error: err.message });

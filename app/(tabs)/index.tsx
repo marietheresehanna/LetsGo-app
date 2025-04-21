@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/constants/env';
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -7,99 +8,216 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { API_BASE_URL } from '@/constants/env';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-const categories = ["Cafe", "Pub", "Restaurant", "Lounge"];
-
-type Place = {
+type PlaceType = {
   _id: string;
   name: string;
   image: string;
   location: string;
   rating: number;
-  type?: string[];
-  tags?: string[];
 };
 
 export default function HomeScreen() {
-  const [places, setPlaces] = useState<Place[]>([]);
+  const [places, setPlaces] = useState<PlaceType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [userName, setUserName] = useState('');
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    axios.get(`${API_BASE_URL}/api/places`)
-      .then((res: any) => setPlaces(res.data))
-      .catch((err) => console.error("Error fetching places:", err))
-      .then(() => setLoading(false))
-.catch((err) => {
-       console.error("Error fetching places:", err);
-       setLoading(false);
-});
+  const fetchPlaces = async (type = '') => {
+    try {
+      setLoading(true);
+      const url = type
+        ? `${API_BASE_URL}/api/places?type=${type}`
+        : `${API_BASE_URL}/api/places`;
+      const res = await axios.get<PlaceType[]>(url);
+      setPlaces(res.data);
+    } catch (err) {
+      console.error('Error fetching places:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
+  const fetchUserName = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      setToken(token);
+      if (token) {
+        const res = await axios.get<{ username: string }>(
+          `${API_BASE_URL}/api/auth/profile`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setUserName(res.data.username);
+      }
+    } catch (err) {
+      console.error('Error fetching user name:', err);
+    }
+  };
+
+  const fetchFavorites = async () => {
+    const token = await AsyncStorage.getItem('token');
+    setToken(token);
+    if (token) {
+      const res = await axios.get(`${API_BASE_URL}/api/auth/favorites`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const ids = res.data.map((p: any) => p._id);
+      setFavoriteIds(ids);
+    }
+  };
+
+  const toggleFavorite = async (placeId: string) => {
+    if (!token) {
+      alert('You must be logged in to favorite places.');
+      return;
+    }
+    const isFav = favoriteIds.includes(placeId);
+    try {
+      if (isFav) {
+        await axios.delete(`${API_BASE_URL}/api/auth/favorites/${placeId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setFavoriteIds((prev) => prev.filter((id) => id !== placeId));
+      } else {
+        await axios.post(`${API_BASE_URL}/api/auth/favorites/${placeId}`, {}, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setFavoriteIds((prev) => [...prev, placeId]);
+      }
+    } catch (err) {
+      console.error('❌ Favorite toggle failed:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPlaces();
+    fetchUserName();
+    fetchFavorites();
   }, []);
 
-  const getTopRated = (): Place[] => {
-    return [...places].sort((a, b) => b.rating - a.rating).slice(0, 5);
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchPlaces(selectedCategory || '');
   };
 
-  const getRecommended = (): Place[] => {
-    return [...places].sort(() => 0.5 - Math.random()).slice(0, 5);
-  };
-
-  const filterByCategory = (category: string): Place[] => {
-    return places.filter(p => p.type?.includes(category));
-  };
+  const categories = ['Cafe', 'Pub', 'Restaurant', 'Lounge'];
+  const ratedPlaces = places.filter((p) => p.rating > 4.5);
+  const topRated = [...ratedPlaces].sort((a, b) => b.rating - a.rating).slice(0, 5);
+  const recommended = [...places].sort(() => 0.5 - Math.random()).slice(0, 5);
 
   if (loading) {
-    return <ActivityIndicator style={{ flex: 1 }} size="large" color="#e23744" />;
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#e23744" />
+      </View>
+    );
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.logo}>LetsGo</Text>
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
+      <View style={styles.logoBox}>
+        <Text style={styles.logoText}>LetsGo</Text>
+      </View>
 
-      <Text style={styles.sectionTitle}>Categories</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rowScroll}>
-        {categories.map((cat, idx) => (
+      <Text style={styles.welcome}>Welcome back{userName ? `, ${userName}` : ''}!</Text>
+
+      <Text style={styles.categoryTitle}>Categories</Text>
+      <View style={styles.categoryRow}>
+        {categories.map((cat) => (
           <TouchableOpacity
-            key={idx}
-            style={styles.categoryCard}
-            onPress={() => router.push({ pathname: '/explore', params: { category: cat } })}
+            key={cat}
+            onPress={() => {
+              router.push({ pathname: '/explore', params: { category: cat } });
+            }}
+            style={[
+              styles.categoryButton,
+              selectedCategory === cat && styles.categorySelected,
+            ]}
           >
-            <Text style={styles.categoryText}>{cat}</Text>
+            <Text
+              style={[
+                styles.categoryText,
+                selectedCategory === cat && { color: 'white' },
+              ]}
+            >
+              {cat}
+            </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
 
-      <Text style={styles.sectionTitle}>Top Rated</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.rowScroll}>
-        {getTopRated().map((place) => (
-          <TouchableOpacity
-            key={place._id}
-            style={styles.placeCard}
-            onPress={() => router.push({ pathname: '/place/[id]', params: { id: place._id } })}
-          >
-            <Image source={{ uri: place.image }} style={styles.image} />
-            <Text style={styles.placeName}>{place.name}</Text>
-            <Text style={styles.placeInfo}>⭐ {place.rating} ‧ {place.location}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      <Text style={styles.sectionTitle}>Recommended for You</Text>
-      {getRecommended().map((place) => (
+      <Text style={styles.categoryTitle}>Recommended For You</Text>
+      {recommended.map((place, index) => (
         <TouchableOpacity
-          key={place._id}
-          style={styles.recommendCard}
-          onPress={() => router.push({ pathname: '/place/[id]', params: { id: place._id } })}
+          key={`rec-${index}`}
+          style={styles.card}
+          onPress={() =>
+            router.push({ pathname: '/place/[id]', params: { id: place._id } })
+          }
         >
-          <Image source={{ uri: place.image }} style={styles.imageHorizontal} />
-          <View style={{ flex: 1, paddingLeft: 12 }}>
-            <Text style={styles.placeName}>{place.name}</Text>
-            <Text style={styles.placeInfo}>⭐ {place.rating} ‧ {place.location}</Text>
+          <Image source={{ uri: place.image }} style={styles.image} />
+          <TouchableOpacity
+            onPress={(e) => {
+              e.stopPropagation();
+              toggleFavorite(place._id);
+            }}
+            style={styles.favoriteIcon}
+          >
+            <Ionicons
+              name={favoriteIds.includes(place._id) ? 'heart' : 'heart-outline'}
+              size={24}
+              color="#e23744"
+            />
+          </TouchableOpacity>
+          <View style={styles.cardContent}>
+            <Text style={styles.name}>{place.name}</Text>
+            <Text style={styles.location}>📍 {place.location}</Text>
+            <Text style={styles.rating}>⭐ {place.rating.toFixed(1)}</Text>
+          </View>
+        </TouchableOpacity>
+      ))}
+
+      <Text style={styles.categoryTitle}>Top Rated</Text>
+      {topRated.map((place, index) => (
+        <TouchableOpacity
+          key={`top-${index}`}
+          style={styles.card}
+          onPress={() =>
+            router.push({ pathname: '/place/[id]', params: { id: place._id } })
+          }
+        >
+          <Image source={{ uri: place.image }} style={styles.image} />
+          <TouchableOpacity
+            onPress={(e) => {
+              e.stopPropagation();
+              toggleFavorite(place._id);
+            }}
+            style={styles.favoriteIcon}
+          >
+            <Ionicons
+              name={favoriteIds.includes(place._id) ? 'heart' : 'heart-outline'}
+              size={24}
+              color="#e23744"
+            />
+          </TouchableOpacity>
+          <View style={styles.cardContent}>
+            <Text style={styles.name}>{place.name}</Text>
+            <Text style={styles.location}>📍 {place.location}</Text>
+            <Text style={styles.rating}>⭐ {place.rating.toFixed(1)}</Text>
           </View>
         </TouchableOpacity>
       ))}
@@ -108,49 +226,98 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 20 },
-  logo: { fontSize: 26, fontWeight: 'bold', color: '#e23744', marginBottom: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: '600', marginVertical: 12, color: '#333' },
-  rowScroll: { marginBottom: 10 },
-  categoryCard: {
-    paddingVertical: 10,
+  container: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+  },
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoBox: {
+    marginBottom: 12,
+  },
+  logoText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#e23744',
+  },
+  welcome: {
+    fontSize: 18,
+    marginBottom: 16,
+    color: '#333',
+  },
+  categoryTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 12,
+    marginBottom: 10,
+    color: '#222',
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  categoryButton: {
+    paddingVertical: 8,
     paddingHorizontal: 16,
     backgroundColor: '#f1f1f1',
     borderRadius: 20,
-    marginRight: 10,
   },
-  categoryText: { fontSize: 14, fontWeight: '500', color: '#444' },
-  placeCard: {
-    width: 160,
-    marginRight: 12,
+  categorySelected: {
+    backgroundColor: '#e23744',
+  },
+  categoryText: {
+    fontWeight: '600',
+    color: '#333',
+  },
+  card: {
+    backgroundColor: '#f9f9f9',
     borderRadius: 12,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 3,
+    marginBottom: 16,
     overflow: 'hidden',
-  },
-  image: { width: '100%', height: 100 },
-  placeName: { fontSize: 15, fontWeight: '600', marginTop: 8, marginHorizontal: 8 },
-  placeInfo: { fontSize: 13, color: '#666', marginHorizontal: 8, marginBottom: 8 },
-  recommendCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 10,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 6,
     elevation: 2,
+    position: 'relative',
   },
-  imageHorizontal: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
+  image: {
+    height: 180,
+    width: '100%',
+  },
+  favoriteIcon: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: '#fff',
+    padding: 6,
+    borderRadius: 20,
+    elevation: 3,
+    zIndex: 10,
+  },
+  cardContent: {
+    padding: 12,
+  },
+  name: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#222',
+  },
+  location: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  rating: {
+    fontSize: 14,
+    color: '#000',
+    marginTop: 4,
+    fontWeight: '500',
   },
 });
