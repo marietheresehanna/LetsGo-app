@@ -4,6 +4,7 @@ import React from 'react';
 import { Platform } from 'react-native';
 
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function TabLayout() {
@@ -33,12 +34,13 @@ export default function TabLayout() {
         },
       }}
     >
+
 <Tabs.Screen
   name="index"
   options={{
     title: 'Home',
-    tabBarIcon: ({ color }: { color: string }) => (
-      <IconSymbol size={24} name="home" color={color} />
+    tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+      <Ionicons name="home" size={size} color={color} />
     ),
   }}
 />
@@ -47,8 +49,8 @@ export default function TabLayout() {
   name="explore"
   options={{
     title: 'Explore',
-    tabBarIcon: ({ color }: { color: string }) => (
-      <IconSymbol size={24} name="search" color={color} />
+    tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+      <Ionicons name="compass" size={size} color={color} />
     ),
   }}
 />

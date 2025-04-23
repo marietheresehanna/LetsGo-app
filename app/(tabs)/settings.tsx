@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useRouter } from 'expo-router';
 import { API_BASE_URL } from '@/constants/env';
+import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 
 const showMessage = (type: 'success' | 'error', text1: string, text2?: string) => {
@@ -148,45 +149,54 @@ export default function SettingsScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Account Settings</Text>
+    <View style={{ flex: 1 }}>
+      {/* X Button */}
+      <View style={{ position: 'absolute', top: 40, right: 20, zIndex: 1 }}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="close" size={28} color="black" />
+        </TouchableOpacity>
+      </View>
 
-      <Text style={styles.sectionTitle}>Change Username</Text>
-      <TextInput
-        style={styles.input}
-        value={newUsername}
-        onChangeText={setNewUsername}
-        placeholder="New username"
-        autoCapitalize="none"
-      />
-      <TouchableOpacity style={styles.button} onPress={updateUsername}>
-        <Text style={styles.buttonText}>Update Username</Text>
-      </TouchableOpacity>
+      <ScrollView style={styles.container}>
+        <Text style={styles.title}>Account Settings</Text>
 
-      <Text style={styles.sectionTitle}>Change Password</Text>
-      <TextInput
-        style={styles.input}
-        value={oldPassword}
-        onChangeText={setOldPassword}
-        placeholder="Current password"
-        secureTextEntry
-      />
-      <TextInput
-        style={styles.input}
-        value={newPassword}
-        onChangeText={setNewPassword}
-        placeholder="New password"
-        secureTextEntry
-      />
-      <TouchableOpacity style={styles.button} onPress={updatePassword}>
-        <Text style={styles.buttonText}>Update Password</Text>
-      </TouchableOpacity>
+        <Text style={styles.sectionTitle}>Change Username</Text>
+        <TextInput
+          style={styles.input}
+          value={newUsername}
+          onChangeText={setNewUsername}
+          placeholder="New username"
+          autoCapitalize="none"
+        />
+        <TouchableOpacity style={styles.button} onPress={updateUsername}>
+          <Text style={styles.buttonText}>Update Username</Text>
+        </TouchableOpacity>
 
-      <Text style={styles.sectionTitle}>Danger Zone</Text>
-      <TouchableOpacity style={styles.deleteButton} onPress={deleteAccount}>
-        <Text style={styles.deleteText}>Delete My Account</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <Text style={styles.sectionTitle}>Change Password</Text>
+        <TextInput
+          style={styles.input}
+          value={oldPassword}
+          onChangeText={setOldPassword}
+          placeholder="Current password"
+          secureTextEntry
+        />
+        <TextInput
+          style={styles.input}
+          value={newPassword}
+          onChangeText={setNewPassword}
+          placeholder="New password"
+          secureTextEntry
+        />
+        <TouchableOpacity style={styles.button} onPress={updatePassword}>
+          <Text style={styles.buttonText}>Update Password</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.sectionTitle}>Danger Zone</Text>
+        <TouchableOpacity style={styles.deleteButton} onPress={deleteAccount}>
+          <Text style={styles.deleteText}>Delete My Account</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 }
 

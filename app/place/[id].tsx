@@ -197,98 +197,113 @@ export default function PlaceDetails() {
   if (!place) return <Text style={styles.loading}>Loading...</Text>;
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Image source={{ uri: place.image }} style={styles.image} />
+    <View style={{ flex: 1 }}>
+      {/* X Button stays outside ScrollView */}
+      <View style={{ position: 'absolute', top: 40, right: 20, zIndex: 1 }}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="close" size={28} color="black" />
+        </TouchableOpacity>
+      </View>
 
-      <Text style={styles.title}>{place.name}</Text>
-      <Text style={styles.subtitle}>📍 {place.location}</Text>
-      <Text style={styles.subtitle}>⭐ {place.rating.toFixed(1)}</Text>
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* Image appears below the button */}
+        <Image source={{ uri: place.image }} style={styles.image} />
 
-      {happyHourRemaining ? (
-        <View style={styles.happyHourBox}>
-          <Text style={styles.happyHourText}>{happyHourRemaining}</Text>
-        </View>
-      ) : null}
+        {/* Rest of the content remains unchanged */}
+        <Text style={styles.title}>{place.name}</Text>
+        <Text style={styles.subtitle}>📍 {place.location}</Text>
+        <Text style={styles.subtitle}>⭐ {place.rating.toFixed(1)}</Text>
 
-      <Text style={styles.section}>Type: {place.type?.join(', ')}</Text>
-      <Text style={styles.section}>Tags: {place.tags?.join(', ')}</Text>
-
-      <TouchableOpacity
-        style={styles.locationButton}
-        onPress={() =>
-          router.push({
-            pathname: '/place/MapScreen',
-            params: {
-              latitude: place.latitude?.toString() || '0',
-              longitude: place.longitude?.toString() || '0',
-              name: place.name,
-            },
-          })
-        }
-      >
-        <Text style={styles.locationText}>View on Map</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.checkInButton} onPress={handleCheckIn}>
-        <Text style={styles.checkInButtonText}>Check In</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.section}>Reviews:</Text>
-      {place.reviews?.length ? (
-        place.reviews.map((rev: any, i: number) => (
-          <View key={i} style={styles.review}>
-            <Text style={styles.reviewer}>{rev.username}:</Text>
-            <Text>{rev.comment} (⭐ {rev.rating})</Text>
+        {happyHourRemaining ? (
+          <View style={styles.happyHourBox}>
+            <Text style={styles.happyHourText}>{happyHourRemaining}</Text>
           </View>
-        ))
-      ) : (
-        <Text style={{ color: '#666' }}>No reviews yet.</Text>
-      )}
+        ) : null}
 
-      {username ? (
-        <>
-          <Text style={styles.section}>Leave a Review:</Text>
+        <Text style={styles.section}>Type: {place.type?.join(', ')}</Text>
+        <Text style={styles.section}>Tags: {place.tags?.join(', ')}</Text>
 
-          {thankYou && (
-            <Animated.Text style={[styles.thankYou, { opacity: fadeAnim }]}>🎉 Thank you for your review!</Animated.Text>
-          )}
+        <TouchableOpacity
+          style={styles.locationButton}
+          onPress={() =>
+            router.push({
+              pathname: '/place/MapScreen',
+              params: {
+                latitude: place.latitude?.toString() || '0',
+                longitude: place.longitude?.toString() || '0',
+                name: place.name,
+              },
+            })
+          }
+        >
+          <Text style={styles.locationText}>View on Map</Text>
+        </TouchableOpacity>
 
-          <TextInput
-            value={comment}
-            onChangeText={setComment}
-            placeholder="Your comment"
-            style={styles.input}
-          />
+        <TouchableOpacity style={styles.checkInButton} onPress={handleCheckIn}>
+          <Text style={styles.checkInButtonText}>Check In</Text>
+        </TouchableOpacity>
 
-          <TextInput
-            value={rating}
-            onChangeText={setRating}
-            placeholder="Rating (1-5)"
-            keyboardType="numeric"
-            style={styles.input}
-          />
+        <Text style={styles.section}>Reviews:</Text>
+        {place.reviews?.length ? (
+          place.reviews.map((rev: any, i: number) => (
+            <View key={i} style={styles.review}>
+              <Text style={styles.reviewer}>{rev.username}:</Text>
+              <Text>{rev.comment} (⭐ {rev.rating})</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={{ color: '#666' }}>No reviews yet.</Text>
+        )}
 
-          <TouchableOpacity
-            disabled={isSubmitting}
-            onPress={submitReview}
-            style={{
-              backgroundColor: '#e23744',
-              padding: 12,
-              borderRadius: 10,
-              marginTop: 12,
-              alignItems: 'center',
-              opacity: isSubmitting ? 0.6 : 1,
-            }}
-          >
-            <Text style={{ color: '#fff', fontWeight: '600' }}>
-              {isSubmitting ? 'Submitting...' : 'Submit Review'}
-            </Text>
-          </TouchableOpacity>
-        </>
-      ) : (
-        <Text style={{ color: '#666', marginTop: 10 }}>You must be logged in to leave a review.</Text>
-      )}
-    </ScrollView>
+        {username ? (
+          <>
+            <Text style={styles.section}>Leave a Review:</Text>
+
+            {thankYou && (
+              <Animated.Text style={[styles.thankYou, { opacity: fadeAnim }]}>
+                🎉 Thank you for your review!
+              </Animated.Text>
+            )}
+
+            <TextInput
+              value={comment}
+              onChangeText={setComment}
+              placeholder="Your comment"
+              style={styles.input}
+            />
+
+            <TextInput
+              value={rating}
+              onChangeText={setRating}
+              placeholder="Rating (1-5)"
+              keyboardType="numeric"
+              style={styles.input}
+            />
+
+            <TouchableOpacity
+              disabled={isSubmitting}
+              onPress={submitReview}
+              style={{
+                backgroundColor: '#e23744',
+                padding: 12,
+                borderRadius: 10,
+                marginTop: 12,
+                alignItems: 'center',
+                opacity: isSubmitting ? 0.6 : 1,
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '600' }}>
+                {isSubmitting ? 'Submitting...' : 'Submit Review'}
+              </Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <Text style={{ color: '#666', marginTop: 10 }}>
+            You must be logged in to leave a review.
+          </Text>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -301,7 +316,8 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: 220,
-    borderRadius: 12,
+    borderRadius: 60,
+    marginTop: 60,
     marginBottom: 16,
   },
   title: {

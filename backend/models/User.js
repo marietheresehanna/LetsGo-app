@@ -17,9 +17,9 @@ const userSchema = new mongoose.Schema({
   gender: String,
   birthdate: Date,
   favorites: [String],
-  points: { type: Number, default: 0 }, // 🆕
-  checkedInPlaces: [String],            // 🆕
-  pointsHistory: [pointsHistorySchema], // 🆕
+  points: { type: Number, default: 0 }, 
+  checkedInPlaces: [String],            
+  pointsHistory: [pointsHistorySchema], 
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
