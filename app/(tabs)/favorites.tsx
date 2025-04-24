@@ -16,10 +16,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 interface Place {
   _id: string;
-  name: string;
-  image: string;
-  location: string;
-  rating: number;
+  name?: string;
+  image?: string;
+  location?: string;
+  rating?: number;
 }
 
 export default function FavoritesScreen() {
@@ -43,6 +43,7 @@ export default function FavoritesScreen() {
         headers: { Authorization: `Bearer ${storedToken}` },
       });
       setFavorites(res.data);
+      console.log('Favorites data:', res.data);
     } catch (err) {
       console.error('❌ Error fetching favorites:', err);
       setFavorites([]);
@@ -97,36 +98,44 @@ export default function FavoritesScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={{ paddingBottom: 100 }} // ✅ Added for safe spacing
-    >
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
       <Text style={styles.title}>⭐ Your Favorites</Text>
 
       {favorites.length === 0 ? (
         <Text style={styles.message}>You haven't added any favorites yet.</Text>
       ) : (
-        favorites.map((place) => (
-          <TouchableOpacity
-            key={place._id}
-            style={styles.card}
-            onPress={() => router.push({ pathname: '/place/[id]', params: { id: place._id } })}
-          >
-            <Image source={{ uri: place.image }} style={styles.image} />
-            <View style={styles.cardContent}>
-              <Text style={styles.name}>{place.name}</Text>
-              <Text style={styles.location}>📍 {place.location}</Text>
-              <Text style={styles.rating}>⭐ {place.rating.toFixed(1)}</Text>
-              <TouchableOpacity onPress={() => toggleFavorite(place._id)} style={styles.favoriteIcon}>
-                <Ionicons
-                  name={favorites.some(p => p._id === place._id) ? 'heart' : 'heart-outline'}
-                  size={24}
-                  color="#e23744"
-                />
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        ))
+        favorites.map((place, index) => {
+          console.log('Rendered place:', place);  // 🔍 Log each place
+          return (
+            <TouchableOpacity
+              key={`${place._id}-${index}`}
+              style={styles.card}
+              onPress={() => router.push({ pathname: '/place/[id]', params: { id: place._id } })}
+            >
+              {place.image ? (
+                <Image source={{ uri: place.image }} style={styles.image} />
+              ) : (
+                <View style={[styles.image, { justifyContent: 'center', alignItems: 'center' }]}>
+                  <Text style={{ color: '#888' }}>No Image</Text>
+                </View>
+              )}
+              <View style={styles.cardContent}>
+                <Text style={styles.name}>{place.name || 'Unnamed'}</Text>
+                <Text style={styles.location}>📍 {place.location || 'No location'}</Text>
+                <Text style={styles.rating}>
+                  ⭐ {place.rating !== undefined ? place.rating.toFixed(1) : 'No rating'}
+                </Text>
+                <TouchableOpacity onPress={() => toggleFavorite(place._id)} style={styles.favoriteIcon}>
+                  <Ionicons
+                    name={favorites.some(p => p._id === place._id) ? 'heart' : 'heart-outline'}
+                    size={24}
+                    color="#e23744"
+                  />
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          );
+        })
       )}
     </ScrollView>
   );

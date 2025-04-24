@@ -8,6 +8,10 @@ const reviewSchema = new mongoose.Schema({
   username: String,
   comment: String,
   rating: Number,
+  pointsMultiplier: {
+    type: Number,
+    default: 1, // 1x points by default
+  },
   createdAt: {
     type: Date,
     default: Date.now,

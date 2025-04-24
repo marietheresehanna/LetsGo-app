@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 
 type PlaceType = {
   _id: string;
@@ -106,6 +107,27 @@ export default function HomeScreen() {
     fetchUserName();
     fetchFavorites();
     //setLoading(false);
+    const sendLocationToBackend = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Permission to access location was denied');
+        return;
+      }
+  
+      const location = await Location.getCurrentPositionAsync({});
+      const token = await AsyncStorage.getItem('token');
+  
+      if (token) {
+        await axios.post(`${API_BASE_URL}/notifications/update-location`, {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        }, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    };
+  
+    sendLocationToBackend();
   }, []);
 
   const onRefresh = () => {

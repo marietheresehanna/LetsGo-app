@@ -13,9 +13,11 @@
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
+    "expo-server-sdk": "^3.15.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.2",
+    "node-cron": "^3.0.3",
     "react-native-toast-message": "^2.2.1"
   }
 }

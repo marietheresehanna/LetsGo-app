@@ -16,10 +16,13 @@ const userSchema = new mongoose.Schema({
   phone: String,
   gender: String,
   birthdate: Date,
-  favorites: [String],
+  favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Place' }],
   points: { type: Number, default: 0 }, 
   checkedInPlaces: [String],            
   pointsHistory: [pointsHistorySchema], 
+  pushToken: {
+    type: String,
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

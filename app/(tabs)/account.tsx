@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useRouter } from 'expo-router';
 import { API_BASE_URL } from '@/constants/env';
+import * as Notifications from 'expo-notifications';
 
 export default function AccountScreen() {
   const [user, setUser] = useState<any>(null);
@@ -38,15 +39,55 @@ export default function AccountScreen() {
       setLoading(false);
     }
   };
-  
+
+  const registerForPushNotifications = async () => {
+    const { status } = await Notifications.requestPermissionsAsync();
+    if (status !== 'granted') {
+      console.log('No notification permissions!');
+      return;
+    }
+
+    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    console.log('Expo Push Token:', token); // For testing
+
+    const authToken = await AsyncStorage.getItem('token');
+    if (authToken) {
+      try {
+        await axios.post(`${API_BASE_URL}/notifications/register-token`,
+          { pushToken: token },
+          { headers: { Authorization: `Bearer ${authToken}` } }
+        );
+      } catch (err) {
+        console.error('Failed to register push token:', err);
+      }
+    }
+  };
 
   const handleLogout = async () => {
     await AsyncStorage.removeItem('token');
     router.replace('/login');
   };
 
+  const handleSpin = async () => {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) {
+      alert('No token found, please log in again.');
+      return;
+    }
+  
+    try {
+      const response = await axios.post(`${API_BASE_URL}/users/spin`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert(`🎉 You earned ${response.data.pointsEarned} points!`);
+    } catch (error) {
+      alert(error.response?.data?.message || 'Spin failed. Try again later.');
+    }
+  };
+
   useEffect(() => {
     fetchUser();
+    registerForPushNotifications(); // Register for push notifications on mount
   }, []);
 
   if (loading) {
@@ -70,26 +111,28 @@ export default function AccountScreen() {
       </View>
     );
   }
-  
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>My Account</Text>
 
       <View style={styles.infoBox}>
-      <InfoRow label="First Name" value={user.firstName || '-'} />
-      <InfoRow label="Last Name" value={user.lastName || '-'} />
-      <InfoRow label="Username" value={user.username || '-'} />
-      <InfoRow label="Email" value={user.email || '-'} />
-      <InfoRow label="Phone" value={user.phone || '-'} />
-      <InfoRow label="Gender" value={user.gender || '-'} />
-      <InfoRow label="Birthdate" value={user.birthdate || '-'} />
-      <InfoRow label="Total Points" value={(user.points?.toString() || '0')} />
-
+        <InfoRow label="First Name" value={user.firstName || '-'} />
+        <InfoRow label="Last Name" value={user.lastName || '-'} />
+        <InfoRow label="Username" value={user.username || '-'} />
+        <InfoRow label="Email" value={user.email || '-'} />
+        <InfoRow label="Phone" value={user.phone || '-'} />
+        <InfoRow label="Gender" value={user.gender || '-'} />
+        <InfoRow label="Birthdate" value={user.birthdate || '-'} />
+        <InfoRow label="Total Points" value={(user.points?.toString() || '0')} />
       </View>
 
       <TouchableOpacity style={styles.button} onPress={() => router.push('/settings')}>
         <Text style={styles.buttonText}>Settings</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.spinButton} onPress={handleSpin}>
+        <Text style={styles.spinButtonText}>Daily Spin</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
@@ -162,5 +205,17 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'red',
     textAlign: 'center',
+  },
+  spinButton: {
+    backgroundColor: '#e23744',
+    padding: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  spinButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

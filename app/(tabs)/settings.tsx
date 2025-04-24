@@ -132,11 +132,14 @@ export default function SettingsScreen() {
   };
 
   useEffect(() => {
+    /*
     const clearToken = async () => {
       await AsyncStorage.removeItem('token'); // 🧹 Clears the old token
       console.log('🧹 Token cleared from storage');
     };
     clearToken();
+*/
+    fetchProfile();
   }, []);
   
 

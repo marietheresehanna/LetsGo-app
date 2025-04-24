@@ -165,7 +165,11 @@ router.delete('/favorites/:placeId', authMiddleware, async (req, res) => {
 });
 router.get('/favorites', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).populate('favorites');
+    const user = await User.findById(req.user.id).populate({
+      path: 'favorites',
+      select: 'name location image rating',
+    });
+    console.log('Populated favorites:', user.favorites);
     res.json(user.favorites);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch favorites' });
