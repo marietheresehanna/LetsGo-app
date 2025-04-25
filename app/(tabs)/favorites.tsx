@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '@/constants/env';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface Place {
   _id: string;
@@ -55,6 +56,12 @@ export default function FavoritesScreen() {
   useEffect(() => {
     fetchFavorites();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchFavorites();  // 🔥 Refetch every time the screen gains focus
+    }, [])
+  );
 
   const toggleFavorite = async (placeId: string) => {
     if (!token) {

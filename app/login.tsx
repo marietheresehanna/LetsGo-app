@@ -37,8 +37,11 @@ export default function LoginScreen() {
         email,
         password,
       });
+      console.log('🧠 Login Response:', res.data);
 
       await AsyncStorage.setItem('token', res.data.token);
+      await AsyncStorage.setItem('userId', res.data.user._id);
+
       router.replace('/(tabs)');
     } catch (err: any) {
       setErrors({ email: err?.response?.data?.message || 'Login failed' });

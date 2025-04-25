@@ -68,35 +68,10 @@ export default function AccountScreen() {
     router.replace('/login');
   };
 
-  const handleSpin = async () => {
-    const token = await AsyncStorage.getItem('token');
-    if (!token) {
-      alert('No token found, please log in again.');
-      return;
-    }
-  
-    try {
-      const response = await axios.post(`${API_BASE_URL}/users/spin`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      alert(`🎉 You earned ${response.data.pointsEarned} points!`);
-    } catch (error) {
-      alert(error.response?.data?.message || 'Spin failed. Try again later.');
-    }
-  };
-
   useEffect(() => {
     fetchUser();
     registerForPushNotifications(); // Register for push notifications on mount
   }, []);
-
-  if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#e23744" />
-      </View>
-    );
-  }
 
   if (!user) {
     return (
@@ -125,14 +100,13 @@ export default function AccountScreen() {
         <InfoRow label="Gender" value={user.gender || '-'} />
         <InfoRow label="Birthdate" value={user.birthdate || '-'} />
         <InfoRow label="Total Points" value={(user.points?.toString() || '0')} />
+        {user.rewards?.includes('20% Discount') && (
+          <Text style={styles.reward}>🎁 You earned a 20% discount at select restaurants!</Text>
+        )}
       </View>
 
       <TouchableOpacity style={styles.button} onPress={() => router.push('/settings')}>
         <Text style={styles.buttonText}>Settings</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.spinButton} onPress={handleSpin}>
-        <Text style={styles.spinButtonText}>Daily Spin</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={[styles.button, styles.logoutButton]} onPress={handleLogout}>
@@ -206,16 +180,10 @@ const styles = StyleSheet.create({
     color: 'red',
     textAlign: 'center',
   },
-  spinButton: {
-    backgroundColor: '#e23744',
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  spinButtonText: {
-    color: '#fff',
+  reward: {
+    marginTop: 12,
+    color: '#e23744',
     fontWeight: 'bold',
-    fontSize: 16,
-  },
+    textAlign: 'center',
+  },  
 });

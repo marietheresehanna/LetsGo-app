@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { API_BASE_URL } from '@/constants/env';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 
 type Place = {
   _id: string;
@@ -42,6 +43,33 @@ export default function ExploreScreen() {
     }
   }, [category]);
 
+  const fetchFavorites = async () => {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) return;
+
+    const res = await axios.get<Place[]>(`${API_BASE_URL}/api/auth/favorites`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const ids = res.data.map((place) => place._id);
+    setFavoriteIds(ids);
+  };
+
+  useEffect(() => {
+    axios.get<Place[]>(`${API_BASE_URL}/api/places`).then((res) => {
+      setAllPlaces(res.data);
+      setFiltered(res.data);
+      fetchFavorites();
+    });
+  }, []);
+
+  // 🔥 Sync favorites when screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchFavorites();
+    }, [])
+  );
+
   const toggleFavorite = async (placeId: string) => {
     const token = await AsyncStorage.getItem('token');
     if (!token) {
@@ -49,20 +77,20 @@ export default function ExploreScreen() {
       return;
     }
 
-    const isFav = favoriteIds.includes(placeId);
-
     try {
+      const isFav = favoriteIds.includes(placeId);
+
       if (isFav) {
         await axios.delete(`${API_BASE_URL}/api/auth/favorites/${placeId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setFavoriteIds((prev) => prev.filter((id) => id !== placeId));
       } else {
         await axios.post(`${API_BASE_URL}/api/auth/favorites/${placeId}`, {}, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setFavoriteIds((prev) => [...prev, placeId]);
       }
+
+      await fetchFavorites();  // 🔄 Sync after toggle
     } catch (err) {
       console.error("❌ Favorite toggle failed:", err);
     }
@@ -97,26 +125,6 @@ export default function ExploreScreen() {
       console.error('❌ Failed to fetch by category:', err);
     }
   };
-
-  useEffect(() => {
-    const fetchFavorites = async () => {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) return;
-
-      const res = await axios.get<Place[]>(`${API_BASE_URL}/api/auth/favorites`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const ids = res.data.map((place) => place._id);
-      setFavoriteIds(ids);
-    };
-
-    axios.get<Place[]>(`${API_BASE_URL}/api/places`).then((res) => {
-      setAllPlaces(res.data);
-      setFiltered(res.data);
-      fetchFavorites();
-    });
-  }, []);
 
   return (
     <View style={styles.container}>
@@ -153,7 +161,7 @@ export default function ExploreScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }} // ✅ FIXED HERE
+        contentContainerStyle={{ paddingBottom: 100 }}
       >
         {filtered.map((place, index) => (
           <TouchableOpacity

@@ -30,8 +30,12 @@ router.post('/register-token', authMiddleware, async (req, res) => {
 
 // Route 2: Update user location and send notification if near a place
 router.post('/update-location', authMiddleware, async (req, res) => {
+  if (!req.body || !req.body.latitude || !req.body.longitude) {
+    return res.status(400).json({ message: 'Latitude and longitude are required' });
+  }
+  
   const { latitude, longitude } = req.body;
-
+  
   if (!latitude || !longitude) {
     return res.status(400).json({ message: 'Location required' });
   }

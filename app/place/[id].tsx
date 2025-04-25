@@ -47,26 +47,36 @@ export default function PlaceDetails() {
       Alert.alert('Error', 'Location data is missing.');
       return;
     }
-
+    
     const distance = getDistance(userLocation.latitude, userLocation.longitude, place.latitude, place.longitude);
     const maxDistance = 100;
-
+  
     if (distance > maxDistance) {
       Alert.alert('Too far', `You are ${Math.round(distance)} meters away. Get closer to check in.`);
       return;
     }
-
+  
     try {
       const userId = await AsyncStorage.getItem('userId');
+      console.log('📡 Sending Check-In:', userId, place._id);
       const response = await axios.post(`${API_BASE_URL}/users/check-in`, {
         userId,
         placeId: place._id,
       });
+  
+      // ✅ First alert for check-in success
       Alert.alert('Check-In Successful', `+${response.data.pointsEarned} points earned!`);
+  
+      // ✅ Reward alert inside the try block
+      if (response.data.rewardGiven) {
+        Alert.alert('🎉 Congrats!', 'You earned a 20% discount at a restaurant!');
+      }
+  
     } catch (error) {
       Alert.alert('Check-In Failed', error.response?.data?.message || 'Try again later.');
     }
   };
+  
 
   const getHappyHourEndDate = (hhmm) => {
     if (!hhmm) return null;

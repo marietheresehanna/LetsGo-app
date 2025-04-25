@@ -15,6 +15,7 @@ import axios from 'axios';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { useFocusEffect } from '@react-navigation/native';
 
 type PlaceType = {
   _id: string;
@@ -34,6 +35,31 @@ export default function HomeScreen() {
   const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
 
+  type Place = {
+    _id: string;
+  };
+  
+  const fetchFavorites = async () => {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) return;
+  
+    try {
+      const res = await axios.get<Place[]>(`${API_BASE_URL}/api/auth/favorites`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const ids = res.data.map((place) => place._id);  // 🔥 Extract IDs
+      setFavoriteIds(ids);
+    } catch (err) {
+      console.error('❌ Error fetching favorites:', err);
+    }
+  };
+  
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchFavorites();  // Refetch every time the screen comes into focus
+    }, [])
+  );
+  
   const fetchPlaces = async (type = '') => {
     try {
       setLoading(true);
@@ -67,17 +93,7 @@ export default function HomeScreen() {
     }
   };
 
-  const fetchFavorites = async () => {
-    const token = await AsyncStorage.getItem('token');
-    setToken(token);
-    if (token) {
-      const res = await axios.get(`${API_BASE_URL}/api/auth/favorites`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const ids = res.data.map((p: any) => p._id);
-      setFavoriteIds(ids);
-    }
-  };
+  
 
   const toggleFavorite = async (placeId: string) => {
     if (!token) {

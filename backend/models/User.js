@@ -18,7 +18,8 @@ const userSchema = new mongoose.Schema({
   birthdate: Date,
   favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Place' }],
   points: { type: Number, default: 0 }, 
-  checkedInPlaces: [String],            
+  checkedInPlaces: [String],   
+  rewards: { type: [String], default: [] },         
   pointsHistory: [pointsHistorySchema], 
   pushToken: {
     type: String,

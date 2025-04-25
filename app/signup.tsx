@@ -200,44 +200,6 @@ const [items, setItems] = useState([
     }}
   />
 )}
-{Platform.OS === 'web' ? (
-  <TextInput
-    style={styles.input}
-    value={birthdate}
-    onChangeText={setBirthdate}
-    placeholder="YYYY-MM-DD"
-  />
-) : (
-  <>
-    <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.input}>
-      <Text style={{ color: birthdate ? '#000' : '#999' }}>
-        {birthdate
-          ? new Date(birthdate).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })
-          : 'Select birthdate'}
-      </Text>
-    </TouchableOpacity>
-    {showDatePicker && (
-      <DateTimePicker
-        value={birthdate ? new Date(birthdate) : new Date()}
-        mode="date"
-        display={Platform.OS === 'ios' ? 'inline' : 'default'}
-        maximumDate={new Date()}
-        onChange={(event, selectedDate) => {
-          setShowDatePicker(false);
-          if (selectedDate) {
-            const iso = selectedDate.toISOString().split('T')[0];
-            setBirthdate(iso);
-          }
-        }}
-      />
-    )}
-  </>
-)}
-
 
       {/* Sign Up Button */}
       <TouchableOpacity style={styles.button} onPress={handleSignup}>
