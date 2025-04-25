@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const Place = require('../models/Place');  // ✅ Add this import
+const Place = require('../models/Place');  
 
 // Check-in Route
 router.post('/check-in', async (req, res) => {
@@ -22,16 +22,26 @@ router.post('/check-in', async (req, res) => {
     if (!place) {
       return res.status(404).json({ message: 'Place not found' });
     }
+    // Cooldown logic: Check if user checked in within last 24 hours
+    // Per-place cooldown logic
+    const lastCheckInAtPlace = user.placeCheckIns?.get(placeId.toString());
+    const now = new Date();
 
-    // Check if already checked in
-    if (user.checkedInPlaces.includes(placeId)) {
-      return res.status(400).json({ message: 'Already checked in!' });
+    if (lastCheckInAtPlace && now - lastCheckInAtPlace < 24 * 60 * 60 * 1000) {
+      return res.status(400).json({ message: 'You can only check in at this place once every 24 hours!' });
     }
+
 
     // Add points and update checked-in places
     const pointsToAdd = 10;
     user.points += pointsToAdd;
     user.checkedInPlaces.push(placeId);
+
+    if (!user.placeCheckIns) {
+      user.placeCheckIns = new Map();
+    }
+    user.placeCheckIns.set(placeId.toString(), now);
+    
 
     // 🎁 Reward logic when reaching 180 points
     if (user.points >= 180 && user.checkedInPlaces.length > 0) {

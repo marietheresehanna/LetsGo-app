@@ -108,6 +108,7 @@ export default function ExploreScreen() {
     const normalizedQuery = normalize(text);
     const filteredResults = allPlaces.filter((place) => {
       const nameMatch = normalize(place.name).includes(normalizedQuery);
+      const locationMatch = normalize(place.location).includes(normalizedQuery);
       const typeMatch = place.type?.some((t) => normalize(t).includes(normalizedQuery));
       const tagMatch = place.tags?.some((t) => normalize(t).includes(normalizedQuery));
       return nameMatch || typeMatch || tagMatch;

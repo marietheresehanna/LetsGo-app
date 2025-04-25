@@ -58,8 +58,9 @@ export default function PlaceDetails() {
   
     try {
       const userId = await AsyncStorage.getItem('userId');
-      console.log('📡 Sending Check-In:', userId, place._id);
-      const response = await axios.post(`${API_BASE_URL}/users/check-in`, {
+      // const userId = await AsyncStorage.getItem('userId') || '6808f29cedcbce60f64ae2a1';
+      console.log('📡 Sending Check-In:', { userId, placeId: place._id });
+      const response = await axios.post(`${API_BASE_URL}/api/users/check-in`, {
         userId,
         placeId: place._id,
       });
@@ -155,7 +156,7 @@ export default function PlaceDetails() {
         setUsername('');
       }
     };
-
+/*
     const fetchUserLocation = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -163,6 +164,23 @@ export default function PlaceDetails() {
         return;
       }
       const location = await Location.getCurrentPositionAsync({});
+      setUserLocation(location.coords);
+    };
+*/
+    const fetchUserLocation = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission denied', 'Location permission is required to check in.');
+        return;
+      }
+
+      // MOCKED LOCATION for testing
+      const location = {
+        coords: {
+          latitude: 33.9962,   // Replace with your desired latitude
+          longitude: 35.8499,  // Replace with your desired longitude
+        },
+      };
       setUserLocation(location.coords);
     };
 

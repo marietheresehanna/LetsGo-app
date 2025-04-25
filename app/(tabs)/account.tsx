@@ -98,7 +98,19 @@ export default function AccountScreen() {
         <InfoRow label="Email" value={user.email || '-'} />
         <InfoRow label="Phone" value={user.phone || '-'} />
         <InfoRow label="Gender" value={user.gender || '-'} />
-        <InfoRow label="Birthdate" value={user.birthdate || '-'} />
+        <InfoRow
+          label="Birthdate"
+          value={
+            user.birthdate
+              ? new Date(user.birthdate).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric',
+                })
+              : '-'
+          }
+        />
+
         <InfoRow label="Total Points" value={(user.points?.toString() || '0')} />
         {user.rewards?.includes('20% Discount') && (
           <Text style={styles.reward}>🎁 You earned a 20% discount at select restaurants!</Text>
