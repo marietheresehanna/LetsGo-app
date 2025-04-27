@@ -23,6 +23,8 @@ type PlaceType = {
   image: string;
   location: string;
   rating: number;
+  type?: string[];   
+  tags?: string[]; 
 };
 
 export default function HomeScreen() {
@@ -131,6 +133,9 @@ export default function HomeScreen() {
       }
   
       const location = await Location.getCurrentPositionAsync({});
+      //const location = { coords: { latitude: 33.8512, longitude: 35.9020} }; 
+      
+console.log('Sending location:', location.coords.latitude, location.coords.longitude);
       const token = await AsyncStorage.getItem('token');
   
       if (token) {
@@ -154,7 +159,31 @@ export default function HomeScreen() {
   const categories = ['Cafe', 'Pub', 'Restaurant', 'Lounge'];
   const ratedPlaces = places.filter((p) => p.rating > 4.5);
   const topRated = [...ratedPlaces].sort((a, b) => b.rating - a.rating).slice(0, 5);
-  const recommended = [...places].sort(() => 0.5 - Math.random()).slice(0, 5);
+
+  // recommended 
+  let recommended: PlaceType[] = [];
+
+  if (favoriteIds.length > 0) {
+    const favoritePlaces = places.filter((place) => favoriteIds.includes(place._id));
+
+    const favoriteTypes = new Set<string>();
+    const favoriteTags = new Set<string>();
+
+    favoritePlaces.forEach((fav) => {
+      fav.type?.forEach((t) => favoriteTypes.add(t));
+      fav.tags?.forEach((tag) => favoriteTags.add(tag));
+    });
+
+    const relevantPlaces = places.filter((place) => {
+      const typeMatch = place.type?.some((t) => favoriteTypes.has(t));
+      const tagMatch = place.tags?.some((tag) => favoriteTags.has(tag));
+      return typeMatch || tagMatch;
+    });
+
+    recommended = [...relevantPlaces].sort(() => 0.5 - Math.random()).slice(0, 5);
+  } else {
+    recommended = [...places].sort(() => 0.5 - Math.random()).slice(0, 5);
+  }
 
   if (loading) {
     return (

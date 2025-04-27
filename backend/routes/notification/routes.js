@@ -49,10 +49,11 @@ router.post('/update-location', authMiddleware, async (req, res) => {
     // Check if user is near any place (within 500 meters)
     const nearbyPlace = places.find((place) => {
       const distance = getDistance(latitude, longitude, place.latitude, place.longitude);
-      return distance <= 500; // meters
+      return distance <= 5000; // meters
     });
 
     if (nearbyPlace) {
+      console.log('👋 Nearby place found:', nearbyPlace.name);
       const user = await User.findById(req.user.id);
 
       if (user?.pushToken && Expo.isExpoPushToken(user.pushToken)) {

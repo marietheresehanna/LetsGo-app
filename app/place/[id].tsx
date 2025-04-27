@@ -156,7 +156,7 @@ export default function PlaceDetails() {
         setUsername('');
       }
     };
-/*
+
     const fetchUserLocation = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -166,7 +166,8 @@ export default function PlaceDetails() {
       const location = await Location.getCurrentPositionAsync({});
       setUserLocation(location.coords);
     };
-*/
+
+/*
     const fetchUserLocation = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -178,12 +179,12 @@ export default function PlaceDetails() {
       const location = {
         coords: {
           latitude: 33.8512,   // Replace with your desired latitude
-          longitude: 35.9029,  // Replace with your desired longitude
+          longitude: 35.9020,  // Replace with your desired longitude
         },
       };
       setUserLocation(location.coords);
     };
-
+*/
     fetchDetails();
     fetchUser();
     fetchUserLocation();
