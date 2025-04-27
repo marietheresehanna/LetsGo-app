@@ -111,7 +111,7 @@ export default function ExploreScreen() {
       const locationMatch = normalize(place.location).includes(normalizedQuery);
       const typeMatch = place.type?.some((t) => normalize(t).includes(normalizedQuery));
       const tagMatch = place.tags?.some((t) => normalize(t).includes(normalizedQuery));
-      return nameMatch || typeMatch || tagMatch;
+      return nameMatch || locationMatch || typeMatch || tagMatch;
     });
     setFiltered(filteredResults);
   };

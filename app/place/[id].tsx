@@ -177,8 +177,8 @@ export default function PlaceDetails() {
       // MOCKED LOCATION for testing
       const location = {
         coords: {
-          latitude: 33.9962,   // Replace with your desired latitude
-          longitude: 35.8499,  // Replace with your desired longitude
+          latitude: 33.8512,   // Replace with your desired latitude
+          longitude: 35.9029,  // Replace with your desired longitude
         },
       };
       setUserLocation(location.coords);
